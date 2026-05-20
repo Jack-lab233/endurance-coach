@@ -1,35 +1,49 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  IconBolt,
+  IconRun,
+  IconTrophy,
+  IconRobot,
+  IconSettings,
+} from "@tabler/icons-react";
 
 const navItems = [
-  { href: "/", label: "Home", icon: "⚡" },
-  { href: "/training", label: "Training", icon: "🏃" },
-  { href: "/races", label: "Races", icon: "🏁" },
-  { href: "/coach", label: "Coach", icon: "🤖" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+  { href: "/", label: "Home", icon: IconBolt },
+  { href: "/training", label: "Train", icon: IconRun },
+  { href: "/races", label: "Races", icon: IconTrophy },
+  { href: "/coach", label: "Coach", icon: IconRobot },
+  { href: "/settings", label: "Settings", icon: IconSettings },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-50">
-      <div className="flex justify-around items-center py-2 px-4 max-w-lg mx-auto">
+    <nav
+      style={{
+        background: "rgba(10,10,10,0.95)",
+        borderTop: "0.5px solid #2a2a2a",
+        backdropFilter: "blur(20px)",
+      }}
+      className="fixed bottom-0 left-0 right-0 z-50 flex"
+    >
+      <div className="flex w-full max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all ${
-                isActive
-                  ? "text-green-400"
-                  : "text-gray-500 hover:text-gray-300"
-              }`}
+              className="flex flex-col items-center gap-1 flex-1 py-2 px-1"
+              style={{ color: isActive ? "var(--green)" : "var(--text3)" }}
             >
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
+              <Icon size={22} strokeWidth={1.6} />
+              <span style={{ fontSize: "10px", letterSpacing: "0.04em", fontWeight: 500 }}>
+                {item.label}
+              </span>
             </Link>
           );
         })}

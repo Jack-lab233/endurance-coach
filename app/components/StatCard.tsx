@@ -2,34 +2,44 @@ interface StatCardProps {
   label: string;
   value: string;
   unit?: string;
-  icon: string;
-  trend?: string;
-  trendUp?: boolean;
+  delta?: string;
+  deltaUp?: boolean;
 }
 
-export default function StatCard({
-  label,
-  value,
-  unit,
-  icon,
-  trend,
-  trendUp,
-}: StatCardProps) {
+export default function StatCard({ label, value, unit, delta, deltaUp }: StatCardProps) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-      <div className="flex justify-between items-start mb-3">
-        <span className="text-gray-400 text-sm font-medium">{label}</span>
-        <span className="text-xl">{icon}</span>
+    <div style={{
+      background: "var(--bg2)",
+      border: "0.5px solid var(--border)",
+      borderRadius: "var(--radius)",
+      padding: "12px 14px",
+    }}>
+      <div style={{
+        fontSize: "10px",
+        color: "var(--text3)",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        fontFamily: "'DM Mono', monospace",
+        marginBottom: "6px",
+      }}>
+        {label}
       </div>
-      <div className="flex items-end gap-1">
-        <span className="text-3xl font-bold text-white">{value}</span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+        <span style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)" }}>
+          {value}
+        </span>
         {unit && (
-          <span className="text-gray-400 text-sm mb-1">{unit}</span>
+          <span style={{ fontSize: "13px", color: "var(--text2)" }}>{unit}</span>
         )}
       </div>
-      {trend && (
-        <div className={`mt-2 text-xs font-medium ${trendUp ? "text-green-400" : "text-red-400"}`}>
-          {trendUp ? "↑" : "↓"} {trend}
+      {delta && (
+        <div style={{
+          fontSize: "11px",
+          marginTop: "4px",
+          fontFamily: "'DM Mono', monospace",
+          color: deltaUp ? "var(--green)" : "var(--red)",
+        }}>
+          {delta}
         </div>
       )}
     </div>

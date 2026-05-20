@@ -1,48 +1,84 @@
 export default function CoachPage() {
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="px-4 pt-12 pb-6">
-        <p className="text-gray-400 text-sm">AI Powered</p>
-        <h1 className="text-2xl font-bold text-white mt-1">Your Coach</h1>
+    <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
+
+      {/* Header */}
+      <div style={{ padding: "52px 16px 16px" }}>
+        <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          AI Powered
+        </p>
+        <h1 style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginTop: "4px" }}>
+          Your Coach
+        </h1>
       </div>
 
-      <div className="px-4 mb-6">
-        <div className="bg-gray-900 border border-green-400/20 rounded-2xl p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-green-400/20 rounded-full flex items-center justify-center text-xl">
-              🤖
-            </div>
-            <div>
-              <p className="text-white font-semibold">Coach AI</p>
-              <p className="text-green-400 text-xs">Online</p>
-            </div>
+      {/* Coach message */}
+      <div style={{ margin: "0 16px 10px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+          <div style={{
+            width: "36px", height: "36px", borderRadius: "50%",
+            background: "var(--green-dim)", border: "0.5px solid rgba(31,204,138,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "18px",
+          }}>🤖</div>
+          <div>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>Coach AI</p>
+            <p style={{ fontSize: "11px", color: "var(--green)", fontFamily: "'DM Mono', monospace" }}>Online</p>
           </div>
-          <p className="text-gray-300 text-sm leading-relaxed">
-            Hey Connor! Great tempo run yesterday — you held 5:12/km for the last 3km which is a new effort for you. Today is your easy run, keep it conversational. How are your legs feeling?
-          </p>
         </div>
+        <p style={{ fontSize: "13px", color: "var(--text2)", lineHeight: 1.7 }}>
+          Hey Connor! Great tempo run yesterday — you held 5:12/km for the last 3km which is a new effort for you. Today is your easy run, keep it conversational. How are your legs feeling?
+        </p>
       </div>
 
-      <div className="px-4 space-y-3 mb-6">
-        {["How should I pace Knysna?", "I'm feeling tired today", "Adjust my plan for next week"].map((q, i) => (
-          <button key={i} className="w-full text-left bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-gray-300 text-sm hover:border-green-400/40 transition-colors">
-            {q} →
+      {/* Quick questions */}
+      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "6px", marginBottom: "10px" }}>
+        {[
+          "How should I pace Knysna?",
+          "I'm feeling tired today",
+          "Adjust my plan for next week",
+        ].map((q, i) => (
+          <button key={i} style={{
+            background: "var(--bg2)",
+            border: "0.5px solid var(--border)",
+            borderRadius: "var(--radius)",
+            padding: "12px 16px",
+            color: "var(--text2)",
+            fontSize: "13px",
+            cursor: "pointer",
+            textAlign: "left",
+            fontFamily: "'Syne', sans-serif",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}>
+            {q}
+            <span style={{ color: "var(--text3)" }}>›</span>
           </button>
         ))}
       </div>
 
-      <div className="px-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-3 flex gap-3">
-          <input
-            type="text"
-            placeholder="Ask your coach anything..."
-            className="flex-1 bg-transparent text-white placeholder-gray-600 text-sm outline-none"
-          />
-          <button className="bg-green-400 text-gray-950 font-bold px-4 py-2 rounded-xl text-sm">
-            Send
-          </button>
-        </div>
+      {/* Input */}
+      <div style={{ margin: "0 16px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "10px 14px", display: "flex", gap: "10px", alignItems: "center" }}>
+        <input
+          type="text"
+          placeholder="Ask your coach anything..."
+          style={{
+            flex: 1, background: "transparent", border: "none", outline: "none",
+            color: "var(--text)", fontSize: "13px",
+            fontFamily: "'Syne', sans-serif",
+          }}
+        />
+        <button style={{
+          background: "var(--green)", color: "var(--green-text)",
+          fontWeight: 600, padding: "8px 16px", borderRadius: "8px",
+          border: "none", cursor: "pointer", fontSize: "13px",
+          fontFamily: "'Syne', sans-serif",
+        }}>
+          Send
+        </button>
       </div>
+
     </div>
   );
 }

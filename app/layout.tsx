@@ -14,11 +14,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ background: "var(--bg)", margin: 0 }}>
-        <main style={{ paddingBottom: "80px", minHeight: "100vh" }}>
-          {children}
-        </main>
-        <BottomNav />
+      <body style={{ background: "#060606", margin: 0, minHeight: "100vh" }}>
+        <div style={{
+          maxWidth: "480px",
+          margin: "0 auto",
+          minHeight: "100vh",
+          background: "var(--bg)",
+          position: "relative",
+        }}>
+          <main style={{ paddingBottom: "72px" }}>
+            {children}
+          </main>
+          <BottomNav />
+        </div>
       </body>
     </html>
   );

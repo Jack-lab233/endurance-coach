@@ -104,12 +104,18 @@ export default function OnboardingPage() {
   const progress = ((stepIndex) / (steps.length - 1)) * 100;
 
   const handleNext = () => {
-    if (isLast) {
-      router.push("/");
-    } else {
-      setStepIndex(stepIndex + 1);
-    }
-  };
+  if (isLast) {
+    localStorage.setItem("onboardingDone", "true");
+    localStorage.setItem("userName", formData.name || "Athlete");
+    localStorage.setItem("coachPersonality", selectedPersonality);
+    localStorage.setItem("trainingPhilosophy", selectedPhilosophy);
+    localStorage.setItem("trainingDays", String(selectedDays));
+    localStorage.setItem("userProfile", JSON.stringify({ ...formData, days: selectedDays }));
+    router.push("/");
+  } else {
+    setStepIndex(stepIndex + 1);
+  }
+};
 
   const handleBack = () => {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);

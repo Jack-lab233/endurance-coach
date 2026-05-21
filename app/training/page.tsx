@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import BottomSheet from "../components/BottomSheet";
 
@@ -58,9 +59,13 @@ export default function TrainingPage() {
   const [showGroupRun, setShowGroupRun] = useState(false);
   const [groupRunForm, setGroupRunForm] = useState({ date: "", distance: "", time: "", notes: "" });
   const [groupRunSaved, setGroupRunSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<"plan" | "progress">("plan");
 
   const week = allWeeks[weekIndex];
   const isCurrentWeek = weekIndex === CURRENT_WEEK - 1;
+  const completedWorkouts = week.workouts.filter((w) => w.done).length;
+  const remainingWorkouts = week.workouts.length - completedWorkouts;
+  const completionRate = Math.round((completedWorkouts / week.workouts.length) * 100);
 
   const handleSaveGroupRun = () => {
     setGroupRunSaved(true);
@@ -136,132 +141,213 @@ export default function TrainingPage() {
         >→</button>
       </div>
 
-      {/* Week strip */}
-      <div style={{ padding: "0 16px 12px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
-          {week.workouts.map((w, i) => (
-            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-              <span style={{ fontSize: "9px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
-                {w.day[0]}
-              </span>
-              <div style={{
-                width: "30px", height: "30px", borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "10px", fontWeight: 600,
-                background: w.done ? "var(--green)" : (w as any).today ? "var(--text)" : "var(--bg3)",
-                color: w.done ? "var(--green-text)" : (w as any).today ? "var(--bg)" : "var(--text2)",
-                border: !w.done && !(w as any).today && w.type !== "rest" ? "0.5px dashed var(--border2)" : "none",
-                cursor: "pointer",
-              }}
-                onClick={() => w.type !== "rest" && setSelectedWorkout(w)}
-              >
-                {w.done ? "✓" : w.type === "rest" ? "—" : w.day[0]}
-              </div>
-              <span style={{ fontSize: "9px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
-                {w.distance}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Load bars */}
-      <div style={{ margin: "0 16px 10px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-          <span style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>Weekly Load</span>
-          <span style={{ fontSize: "10px", color: isCurrentWeek ? "var(--green)" : "var(--text2)", fontFamily: "'DM Mono', monospace" }}>
-            {isCurrentWeek ? "Current Week" : weekIndex < CURRENT_WEEK - 1 ? "Completed" : "Upcoming"}
-          </span>
-        </div>
+      {/* Tab switcher */}
+      <div style={{ padding: "0 16px 10px", display: "flex", gap: "10px" }}>
         {[
-          { label: "Easy", pct: 60, color: "#4a9eff" },
-          { label: "Tempo", pct: 25, color: "#f0a830" },
-          { label: "Hard", pct: 15, color: "#e05252" },
-        ].map((z, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: i < 2 ? "6px" : 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text2)", fontFamily: "'DM Mono', monospace", width: "44px" }}>{z.label}</span>
-            <div style={{ flex: 1, height: "5px", background: "var(--bg3)", borderRadius: "3px", overflow: "hidden" }}>
-              <div style={{ width: `${z.pct}%`, height: "100%", background: z.color, borderRadius: "3px" }} />
-            </div>
-            <span style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", width: "28px", textAlign: "right" }}>{z.pct}%</span>
-          </div>
+          { key: "plan", label: "Plan" },
+          { key: "progress", label: "Progress" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as "plan" | "progress")}
+            style={{
+              flex: 1,
+              padding: "10px 14px",
+              borderRadius: "14px",
+              border: "0.5px solid",
+              borderColor: activeTab === tab.key ? "var(--green)" : "var(--border)",
+              background: activeTab === tab.key ? "var(--green-dim)" : "var(--bg2)",
+              color: activeTab === tab.key ? "var(--green)" : "var(--text)",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "'DM Mono', monospace",
+            }}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
 
-      {/* Add group run */}
-      <div style={{ padding: "0 16px 10px" }}>
-        <button
-          onClick={() => setShowGroupRun(true)}
-          style={{
-            width: "100%", background: "var(--bg2)",
-            border: "0.5px dashed rgba(31,204,138,0.4)",
-            borderRadius: "var(--radius)", padding: "11px 16px",
-            color: "var(--green)", fontSize: "12px",
-            fontFamily: "'DM Mono', monospace", cursor: "pointer",
-            letterSpacing: "0.04em", display: "flex",
-            alignItems: "center", justifyContent: "center", gap: "8px",
-          }}
-        >
-          + ADD GROUP RUN
-        </button>
-      </div>
+      {activeTab === "plan" ? (
+        <>
+          {/* Week strip */}
+          <div style={{ padding: "0 16px 12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
+              {week.workouts.map((w, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                  <span style={{ fontSize: "9px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
+                    {w.day[0]}
+                  </span>
+                  <div style={{
+                    width: "30px", height: "30px", borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "10px", fontWeight: 600,
+                    background: w.done ? "var(--green)" : (w as any).today ? "var(--text)" : "var(--bg3)",
+                    color: w.done ? "var(--green-text)" : (w as any).today ? "var(--bg)" : "var(--text2)",
+                    border: !w.done && !(w as any).today && w.type !== "rest" ? "0.5px dashed var(--border2)" : "none",
+                    cursor: "pointer",
+                  }}
+                    onClick={() => w.type !== "rest" && setSelectedWorkout(w)}
+                  >
+                    {w.done ? "✓" : w.type === "rest" ? "—" : w.day[0]}
+                  </div>
+                  <span style={{ fontSize: "9px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
+                    {w.distance}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {/* Workout list */}
-      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "1px" }}>
-        {week.workouts.map((w, i) => {
-          const tc = typeColors[w.type];
-          const isToday = (w as any).today && isCurrentWeek;
-          return (
-            <div
-              key={i}
-              onClick={() => w.type !== "rest" && setSelectedWorkout(w)}
+          {/* Load bars */}
+          <div style={{ margin: "0 16px 10px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+              <span style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>Weekly Load</span>
+              <span style={{ fontSize: "10px", color: isCurrentWeek ? "var(--green)" : "var(--text2)", fontFamily: "'DM Mono', monospace" }}>
+                {isCurrentWeek ? "Current Week" : weekIndex < CURRENT_WEEK - 1 ? "Completed" : "Upcoming"}
+              </span>
+            </div>
+            {[
+              { label: "Easy", pct: 60, color: "#4a9eff" },
+              { label: "Tempo", pct: 25, color: "#f0a830" },
+              { label: "Hard", pct: 15, color: "#e05252" },
+            ].map((z, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: i < 2 ? "6px" : 0 }}>
+                <span style={{ fontSize: "11px", color: "var(--text2)", fontFamily: "'DM Mono', monospace", width: "44px" }}>{z.label}</span>
+                <div style={{ flex: 1, height: "5px", background: "var(--bg3)", borderRadius: "3px", overflow: "hidden" }}>
+                  <div style={{ width: `${z.pct}%`, height: "100%", background: z.color, borderRadius: "3px" }} />
+                </div>
+                <span style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", width: "28px", textAlign: "right" }}>{z.pct}%</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Timeline link */}
+          <div style={{ padding: "0 16px 10px" }}>
+            <Link href="/timeline" style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              background: "var(--bg2)", border: "0.5px solid var(--border)",
+              borderRadius: "var(--radius)", padding: "11px 16px",
+              textDecoration: "none",
+            }}>
+              <div>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>View Full Training Timeline</p>
+                <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginTop: "2px" }}>16 weeks · mileage progression · race phases</p>
+              </div>
+              <span style={{ color: "var(--text3)", fontSize: "18px" }}>›</span>
+            </Link>
+          </div>
+
+          {/* Add group run */}
+          <div style={{ padding: "0 16px 10px" }}>
+            <button
+              onClick={() => setShowGroupRun(true)}
               style={{
-                background: isToday ? "var(--bg2)" : "transparent",
-                border: isToday ? "0.5px solid var(--green)" : "0.5px solid transparent",
-                borderRadius: "var(--radius)",
-                padding: "11px 4px",
-                opacity: w.done ? 0.4 : 1,
-                borderBottom: !isToday ? "0.5px solid var(--border)" : undefined,
-                cursor: w.type !== "rest" ? "pointer" : "default",
+                width: "100%", background: "var(--bg2)",
+                border: "0.5px dashed rgba(31,204,138,0.4)",
+                borderRadius: "var(--radius)", padding: "11px 16px",
+                color: "var(--green)", fontSize: "12px",
+                fontFamily: "'DM Mono', monospace", cursor: "pointer",
+                letterSpacing: "0.04em", display: "flex",
+                alignItems: "center", justifyContent: "center", gap: "8px",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", minWidth: "24px" }}>
-                    {w.day}
-                  </span>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{w.name}</span>
-                      {isToday && (
-                        <span style={{ fontSize: "9px", color: "var(--green)", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}>TODAY</span>
+              + ADD GROUP RUN
+            </button>
+          </div>
+
+          {/* Workout list */}
+          <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "1px" }}>
+            {week.workouts.map((w, i) => {
+              const tc = typeColors[w.type];
+              const isToday = (w as any).today && isCurrentWeek;
+              return (
+                <div
+                  key={i}
+                  onClick={() => w.type !== "rest" && setSelectedWorkout(w)}
+                  style={{
+                    background: isToday ? "var(--bg2)" : "transparent",
+                    border: isToday ? "0.5px solid var(--green)" : "0.5px solid transparent",
+                    borderRadius: "var(--radius)",
+                    padding: "11px 4px",
+                    opacity: w.done ? 0.4 : 1,
+                    borderBottom: !isToday ? "0.5px solid var(--border)" : undefined,
+                    cursor: w.type !== "rest" ? "pointer" : "default",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <span style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", minWidth: "24px" }}>
+                        {w.day}
+                      </span>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{w.name}</span>
+                          {isToday && (
+                            <span style={{ fontSize: "9px", color: "var(--green)", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}>TODAY</span>
+                          )}
+                        </div>
+                        {w.distance && (
+                          <span style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
+                            {w.distance}{w.duration ? ` · ${w.duration}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{
+                        fontSize: "10px", fontWeight: 600,
+                        padding: "3px 10px", borderRadius: "20px",
+                        color: tc.color, background: tc.bg,
+                        fontFamily: "'DM Mono', monospace",
+                      }}>
+                        {w.type}
+                      </span>
+                      {w.type !== "rest" && (
+                        <span style={{ color: "var(--text3)", fontSize: "14px" }}>›</span>
                       )}
                     </div>
-                    {w.distance && (
-                      <span style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
-                        {w.distance}{w.duration ? ` · ${w.duration}` : ""}
-                      </span>
-                    )}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{
-                    fontSize: "10px", fontWeight: 600,
-                    padding: "3px 10px", borderRadius: "20px",
-                    color: tc.color, background: tc.bg,
-                    fontFamily: "'DM Mono', monospace",
-                  }}>
-                    {w.type}
-                  </span>
-                  {w.type !== "rest" && (
-                    <span style={{ color: "var(--text3)", fontSize: "14px" }}>›</span>
-                  )}
-                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <div style={{ padding: "0 16px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "16px" }}>
+            <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
+              Progress Overview
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div style={{ background: "var(--bg)", borderRadius: "14px", padding: "12px", border: "0.5px solid var(--border)" }}>
+                <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginBottom: "6px" }}>Completed</p>
+                <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)" }}>{completedWorkouts}</p>
+              </div>
+              <div style={{ background: "var(--bg)", borderRadius: "14px", padding: "12px", border: "0.5px solid var(--border)" }}>
+                <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginBottom: "6px" }}>Remaining</p>
+                <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)" }}>{remainingWorkouts}</p>
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          <div style={{ background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>Completion rate</p>
+              <p style={{ fontSize: "12px", color: "var(--green)", fontFamily: "'DM Mono', monospace" }}>{completionRate}%</p>
+            </div>
+            <div style={{ width: "100%", height: "10px", background: "var(--bg3)", borderRadius: "999px", overflow: "hidden" }}>
+              <div style={{ width: `${completionRate}%`, height: "100%", background: "var(--green)", borderRadius: "999px" }} />
+            </div>
+          </div>
+
+          <div style={{ background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "16px" }}>
+            <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>Current focus</p>
+            <p style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.5 }}>Stay consistent with easy miles and recovery ahead of the long run. Track progress against your weekly mileage goal.</p>
+          </div>
+        </div>
+      )}
 
       {/* Workout detail modal */}
       <BottomSheet

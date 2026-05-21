@@ -22,10 +22,15 @@ export default function ProfilePage() {
   const [selectedPersonality, setSelectedPersonality] = useState("supportive");
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+ const handleSave = () => {
+  localStorage.setItem("coachPersonality", selectedPersonality);
+  localStorage.setItem("trainingPhilosophy", selectedPhilosophy);
+  localStorage.setItem("userName", "Connor");
+
+  setSaved(true);
+
+  setTimeout(() => setSaved(false), 2000);
+};
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>

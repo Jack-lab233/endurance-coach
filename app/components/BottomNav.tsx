@@ -1,9 +1,11 @@
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   IconBolt,
   IconRun,
   IconTrophy,
-  IconRobot,
+  IconTimeline,
   IconUser,
 } from "@tabler/icons-react";
 
@@ -11,7 +13,7 @@ const navItems = [
   { href: "/", label: "Home", icon: IconBolt },
   { href: "/training", label: "Train", icon: IconRun },
   { href: "/races", label: "Races", icon: IconTrophy },
-  { href: "/coach", label: "Coach", icon: IconRobot },
+  { href: "/timeline", label: "Timeline", icon: IconTimeline },
   { href: "/profile", label: "Profile", icon: IconUser },
 ];
 

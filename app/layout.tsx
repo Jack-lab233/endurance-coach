@@ -25,11 +25,11 @@ export default function RootLayout({
           background: "var(--bg)",
           position: "relative",
         }}>
-          {/* Global settings button */}
+          {/* Settings button — scrolls with page, not fixed */}
           <Link href="/settings" style={{
-            position: "fixed",
+            position: "absolute",
             top: "16px",
-            right: "calc(50% - 224px)",
+            right: "16px",
             zIndex: 40,
             width: "36px", height: "36px",
             background: "rgba(20,20,20,0.8)",
@@ -38,6 +38,7 @@ export default function RootLayout({
             borderRadius: "50%",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "var(--text2)",
+            textDecoration: "none",
           }}>
             <IconSettings size={18} strokeWidth={1.6} />
           </Link>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import BottomNav from "./components/BottomNav";
+import FloatingAction from "./components/FloatingAction";
 
 export const metadata: Metadata = {
   title: "EnduranceCoach",
@@ -25,6 +26,7 @@ export default function RootLayout({
           <main style={{ paddingBottom: "72px" }}>
             {children}
           </main>
+          <FloatingAction />
           <BottomNav />
         </div>
       </body>

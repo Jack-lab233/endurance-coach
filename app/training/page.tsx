@@ -1,43 +1,148 @@
-export default function TrainingPage() {
-  const workouts = [
-    { day: "Mon", name: "Easy Run", distance: "8km", duration: "56 min", type: "easy", done: true },
-    { day: "Tue", name: "Rest Day", distance: "", duration: "", type: "rest", done: true },
-    { day: "Wed", name: "Tempo Run", distance: "10km", duration: "52 min", type: "tempo", done: true },
-    { day: "Thu", name: "Easy Run", distance: "6km", duration: "42 min", type: "easy", done: false, today: true },
-    { day: "Fri", name: "Intervals", distance: "8km", duration: "55 min", type: "hard", done: false },
-    { day: "Sat", name: "Group Long Run", distance: "22km", duration: "2h 30min", type: "group", done: false },
-    { day: "Sun", name: "Rest Day", distance: "", duration: "", type: "rest", done: false },
-  ];
+"use client";
+import { useState } from "react";
+import BottomSheet from "../components/BottomSheet";
 
-  const typeColors: Record<string, { color: string; bg: string }> = {
-    easy:  { color: "#4a9eff", bg: "rgba(74,158,255,0.12)" },
-    tempo: { color: "#f0a830", bg: "rgba(240,168,48,0.12)" },
-    hard:  { color: "#e05252", bg: "rgba(224,82,82,0.12)" },
-    long:  { color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-    group: { color: "#1fcc8a", bg: "rgba(31,204,138,0.12)" },
-    rest:  { color: "#444",    bg: "var(--bg3)" },
+const typeColors: Record<string, { color: string; bg: string }> = {
+  easy:  { color: "#4a9eff", bg: "rgba(74,158,255,0.12)" },
+  tempo: { color: "#f0a830", bg: "rgba(240,168,48,0.12)" },
+  hard:  { color: "#e05252", bg: "rgba(224,82,82,0.12)" },
+  long:  { color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+  group: { color: "#1fcc8a", bg: "rgba(31,204,138,0.12)" },
+  rest:  { color: "#444",    bg: "var(--bg3)" },
+};
+
+const allWeeks = [
+  {
+    week: 1, label: "Base Building", totalKm: 40,
+    workouts: [
+      { day: "Mon", name: "Easy Run", distance: "6km", duration: "42 min", type: "easy", done: true, purpose: "Builds your aerobic base at a comfortable effort. Keeps fatigue low while stimulating adaptation.", execution: "Keep HR in Zone 2 (below 140 bpm). You should be able to hold a full conversation.", targetHR: "120–140 bpm", targetPace: "6:30–7:00/km" },
+      { day: "Tue", name: "Rest Day", distance: "", duration: "", type: "rest", done: true, purpose: "Recovery is when adaptation happens. This rest day is intentional, not optional.", execution: "Light walking is fine. Avoid any hard activity.", targetHR: "", targetPace: "" },
+      { day: "Wed", name: "Easy Run", distance: "8km", duration: "56 min", type: "easy", done: true, purpose: "Mid-week aerobic stimulus to maintain consistency without accumulating fatigue.", execution: "Zone 2 effort throughout. Focus on relaxed form.", targetHR: "120–140 bpm", targetPace: "6:30–7:00/km" },
+      { day: "Thu", name: "Rest Day", distance: "", duration: "", type: "rest", done: true, purpose: "Second rest day to ensure full recovery before the quality session.", execution: "Rest or gentle mobility work.", targetHR: "", targetPace: "" },
+      { day: "Fri", name: "Strides", distance: "5km", duration: "35 min", type: "easy", done: true, purpose: "Short accelerations improve neuromuscular efficiency and leg turnover.", execution: "Easy 4km warmup then 4×100m strides at 5k effort with full recovery.", targetHR: "140–160 bpm during strides", targetPace: "Easy + 4:30/km strides" },
+      { day: "Sat", name: "Long Run", distance: "16km", duration: "1h 55min", type: "long", done: true, purpose: "The cornerstone of marathon training. Builds endurance, fat oxidation and mental toughness.", execution: "Very easy effort throughout. Last 3km can be at marathon goal pace.", targetHR: "120–145 bpm", targetPace: "6:45–7:15/km" },
+      { day: "Sun", name: "Rest Day", distance: "", duration: "", type: "rest", done: true, purpose: "Full recovery after long run. Critical for adaptation.", execution: "Complete rest. Prioritize sleep and nutrition.", targetHR: "", targetPace: "" },
+    ],
+  },
+  {
+    week: 2, label: "Base Building", totalKm: 45,
+    workouts: [
+      { day: "Mon", name: "Easy Run", distance: "8km", duration: "56 min", type: "easy", done: true, purpose: "Aerobic base maintenance at low intensity.", execution: "Zone 2 throughout. Conversational pace.", targetHR: "120–140 bpm", targetPace: "6:30–7:00/km" },
+      { day: "Tue", name: "Rest Day", distance: "", duration: "", type: "rest", done: true, purpose: "Recovery day.", execution: "Full rest or light walking.", targetHR: "", targetPace: "" },
+      { day: "Wed", name: "Tempo Run", distance: "10km", duration: "52 min", type: "tempo", done: true, purpose: "Improves lactate threshold — the pace you can sustain for a long time before fatigue accumulates.", execution: "2km warmup, 6km at comfortably hard effort, 2km cooldown.", targetHR: "155–168 bpm", targetPace: "5:00–5:20/km" },
+      { day: "Thu", name: "Easy Run", distance: "6km", duration: "42 min", type: "easy", done: false, today: true, purpose: "Recovery run to flush fatigue from yesterday's tempo.", execution: "Very easy. If legs feel heavy, slow down more than you think you need to.", targetHR: "115–135 bpm", targetPace: "6:45–7:15/km" },
+      { day: "Fri", name: "Intervals", distance: "8km", duration: "55 min", type: "hard", done: false, purpose: "VO2 max development. Forces your body to work at near-maximum oxygen uptake.", execution: "2km warmup, 5×1000m at 5k race effort with 90 sec recovery jog, 1km cooldown.", targetHR: "170–182 bpm during reps", targetPace: "4:30–4:45/km for reps" },
+      { day: "Sat", name: "Group Long Run", distance: "22km", duration: "2h 30min", type: "group", done: false, purpose: "Long runs build endurance. Running with a group adds accountability and makes it more enjoyable.", execution: "Easy conversational effort. Don't let group pace push you too hard.", targetHR: "120–145 bpm", targetPace: "6:30–7:00/km" },
+      { day: "Sun", name: "Rest Day", distance: "", duration: "", type: "rest", done: false, purpose: "Post long run recovery. Essential for adaptation.", execution: "Complete rest.", targetHR: "", targetPace: "" },
+    ],
+  },
+  {
+    week: 3, label: "Aerobic Build", totalKm: 52,
+    workouts: [
+      { day: "Mon", name: "Easy Run", distance: "10km", duration: "70 min", type: "easy", done: false, purpose: "Volume increase. Continuing to build aerobic base.", execution: "Zone 2. Relaxed and controlled.", targetHR: "120–140 bpm", targetPace: "6:30–7:00/km" },
+      { day: "Tue", name: "Rest Day", distance: "", duration: "", type: "rest", done: false, purpose: "Recovery day.", execution: "Full rest.", targetHR: "", targetPace: "" },
+      { day: "Wed", name: "Tempo Run", distance: "12km", duration: "62 min", type: "tempo", done: false, purpose: "Extended tempo to push lactate threshold higher.", execution: "2km warmup, 8km tempo, 2km cooldown.", targetHR: "155–168 bpm", targetPace: "5:00–5:15/km" },
+      { day: "Thu", name: "Easy Run", distance: "8km", duration: "56 min", type: "easy", done: false, purpose: "Recovery after tempo.", execution: "Very easy effort.", targetHR: "115–135 bpm", targetPace: "6:45–7:15/km" },
+      { day: "Fri", name: "Intervals", distance: "10km", duration: "65 min", type: "hard", done: false, purpose: "Higher volume interval session to push VO2 max.", execution: "2km warmup, 6×1000m at 5k effort, 90 sec recovery, 2km cooldown.", targetHR: "170–182 bpm during reps", targetPace: "4:30–4:45/km" },
+      { day: "Sat", name: "Long Run", distance: "26km", duration: "3h 00min", type: "long", done: false, purpose: "Significant long run. Mental and physical endurance stimulus.", execution: "Very easy first 20km. Last 6km at marathon goal pace.", targetHR: "120–150 bpm", targetPace: "6:30–7:00/km" },
+      { day: "Sun", name: "Rest Day", distance: "", duration: "", type: "rest", done: false, purpose: "Critical recovery post long run.", execution: "Complete rest. Refuel and hydrate well.", targetHR: "", targetPace: "" },
+    ],
+  },
+];
+
+const CURRENT_WEEK = 2;
+
+export default function TrainingPage() {
+  const [weekIndex, setWeekIndex] = useState(CURRENT_WEEK - 1);
+  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
+  const [showGroupRun, setShowGroupRun] = useState(false);
+  const [groupRunForm, setGroupRunForm] = useState({ date: "", distance: "", time: "", notes: "" });
+  const [groupRunSaved, setGroupRunSaved] = useState(false);
+
+  const week = allWeeks[weekIndex];
+  const isCurrentWeek = weekIndex === CURRENT_WEEK - 1;
+
+  const handleSaveGroupRun = () => {
+    setGroupRunSaved(true);
+    setTimeout(() => {
+      setShowGroupRun(false);
+      setGroupRunSaved(false);
+    }, 1500);
   };
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
 
       {/* Header */}
-      <div style={{ padding: "52px 16px 16px" }}>
+      <div style={{ padding: "52px 16px 12px" }}>
         <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          Week 4 of 16
+          {week.label}
         </p>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginTop: "4px" }}>
-          Training Plan
-        </h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)" }}>
+            Week {week.week} of 16
+          </h1>
+          <span style={{ fontSize: "12px", color: "var(--green)", fontFamily: "'DM Mono', monospace" }}>
+            {week.totalKm}km
+          </span>
+        </div>
+      </div>
+
+      {/* Week switcher */}
+      <div style={{ padding: "0 16px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
+        <button
+          onClick={() => setWeekIndex(Math.max(0, weekIndex - 1))}
+          disabled={weekIndex === 0}
+          style={{
+            background: "var(--bg2)", border: "0.5px solid var(--border)",
+            borderRadius: "8px", padding: "6px 12px", cursor: weekIndex === 0 ? "not-allowed" : "pointer",
+            color: weekIndex === 0 ? "var(--text3)" : "var(--text)", fontSize: "14px",
+          }}
+        >←</button>
+
+        <div style={{ flex: 1, display: "flex", gap: "4px", overflowX: "auto" }}>
+          {allWeeks.map((w, i) => (
+            <button
+              key={i}
+              onClick={() => setWeekIndex(i)}
+              style={{
+                flexShrink: 0,
+                padding: "5px 12px",
+                borderRadius: "20px",
+                border: "0.5px solid",
+                borderColor: weekIndex === i ? "var(--green)" : "var(--border)",
+                background: weekIndex === i ? "var(--green-dim)" : "var(--bg2)",
+                color: weekIndex === i ? "var(--green)" : "var(--text3)",
+                fontSize: "11px",
+                fontFamily: "'DM Mono', monospace",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {i === CURRENT_WEEK - 1 ? "Now" : `W${w.week}`}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setWeekIndex(Math.min(allWeeks.length - 1, weekIndex + 1))}
+          disabled={weekIndex === allWeeks.length - 1}
+          style={{
+            background: "var(--bg2)", border: "0.5px solid var(--border)",
+            borderRadius: "8px", padding: "6px 12px",
+            cursor: weekIndex === allWeeks.length - 1 ? "not-allowed" : "pointer",
+            color: weekIndex === allWeeks.length - 1 ? "var(--text3)" : "var(--text)", fontSize: "14px",
+          }}
+        >→</button>
       </div>
 
       {/* Week strip */}
-      <div style={{ padding: "0 16px 14px" }}>
+      <div style={{ padding: "0 16px 12px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
-          {workouts.map((w, i) => (
+          {week.workouts.map((w, i) => (
             <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
               <span style={{ fontSize: "9px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
-                {w.day.slice(0,1)}
+                {w.day[0]}
               </span>
               <div style={{
                 width: "30px", height: "30px", borderRadius: "50%",
@@ -46,7 +151,10 @@ export default function TrainingPage() {
                 background: w.done ? "var(--green)" : (w as any).today ? "var(--text)" : "var(--bg3)",
                 color: w.done ? "var(--green-text)" : (w as any).today ? "var(--bg)" : "var(--text2)",
                 border: !w.done && !(w as any).today && w.type !== "rest" ? "0.5px dashed var(--border2)" : "none",
-              }}>
+                cursor: "pointer",
+              }}
+                onClick={() => w.type !== "rest" && setSelectedWorkout(w)}
+              >
                 {w.done ? "✓" : w.type === "rest" ? "—" : w.day[0]}
               </div>
               <span style={{ fontSize: "9px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
@@ -57,11 +165,13 @@ export default function TrainingPage() {
         </div>
       </div>
 
-      {/* Load summary */}
+      {/* Load bars */}
       <div style={{ margin: "0 16px 10px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
           <span style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>Weekly Load</span>
-          <span style={{ fontSize: "10px", color: "var(--green)", fontFamily: "'DM Mono', monospace" }}>54km planned</span>
+          <span style={{ fontSize: "10px", color: isCurrentWeek ? "var(--green)" : "var(--text2)", fontFamily: "'DM Mono', monospace" }}>
+            {isCurrentWeek ? "Current Week" : weekIndex < CURRENT_WEEK - 1 ? "Completed" : "Upcoming"}
+          </span>
         </div>
         {[
           { label: "Easy", pct: 60, color: "#4a9eff" },
@@ -80,44 +190,45 @@ export default function TrainingPage() {
 
       {/* Add group run */}
       <div style={{ padding: "0 16px 10px" }}>
-        <button style={{
-          width: "100%",
-          background: "var(--bg2)",
-          border: "0.5px dashed rgba(31,204,138,0.4)",
-          borderRadius: "var(--radius)",
-          padding: "11px 16px",
-          color: "var(--green)",
-          fontSize: "12px",
-          fontFamily: "'DM Mono', monospace",
-          cursor: "pointer",
-          letterSpacing: "0.04em",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "8px",
-        }}>
+        <button
+          onClick={() => setShowGroupRun(true)}
+          style={{
+            width: "100%", background: "var(--bg2)",
+            border: "0.5px dashed rgba(31,204,138,0.4)",
+            borderRadius: "var(--radius)", padding: "11px 16px",
+            color: "var(--green)", fontSize: "12px",
+            fontFamily: "'DM Mono', monospace", cursor: "pointer",
+            letterSpacing: "0.04em", display: "flex",
+            alignItems: "center", justifyContent: "center", gap: "8px",
+          }}
+        >
           + ADD GROUP RUN
         </button>
       </div>
 
       {/* Workout list */}
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "1px" }}>
-        {workouts.map((w, i) => {
+        {week.workouts.map((w, i) => {
           const tc = typeColors[w.type];
-          const isToday = (w as any).today;
+          const isToday = (w as any).today && isCurrentWeek;
           return (
-            <div key={i} style={{
-              background: isToday ? "var(--bg2)" : "transparent",
-              border: isToday ? "0.5px solid var(--green)" : "0.5px solid transparent",
-              borderRadius: "var(--radius)",
-              padding: "11px 4px",
-              opacity: w.done ? 0.4 : 1,
-              borderBottom: !isToday ? "0.5px solid var(--border)" : undefined,
-            }}>
+            <div
+              key={i}
+              onClick={() => w.type !== "rest" && setSelectedWorkout(w)}
+              style={{
+                background: isToday ? "var(--bg2)" : "transparent",
+                border: isToday ? "0.5px solid var(--green)" : "0.5px solid transparent",
+                borderRadius: "var(--radius)",
+                padding: "11px 4px",
+                opacity: w.done ? 0.4 : 1,
+                borderBottom: !isToday ? "0.5px solid var(--border)" : undefined,
+                cursor: w.type !== "rest" ? "pointer" : "default",
+              }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                   <span style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", minWidth: "24px" }}>
-                    {w.day.slice(0,3)}
+                    {w.day}
                   </span>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -133,29 +244,165 @@ export default function TrainingPage() {
                     )}
                   </div>
                 </div>
-                <span style={{
-                  fontSize: "10px", fontWeight: 600,
-                  padding: "3px 10px", borderRadius: "20px",
-                  color: tc.color, background: tc.bg,
-                  fontFamily: "'DM Mono', monospace",
-                }}>
-                  {w.type}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{
+                    fontSize: "10px", fontWeight: 600,
+                    padding: "3px 10px", borderRadius: "20px",
+                    color: tc.color, background: tc.bg,
+                    fontFamily: "'DM Mono', monospace",
+                  }}>
+                    {w.type}
+                  </span>
+                  {w.type !== "rest" && (
+                    <span style={{ color: "var(--text3)", fontSize: "14px" }}>›</span>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* AI note */}
-      <div style={{ margin: "12px 16px 0", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 16px" }}>
-        <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
-          AI Note
-        </p>
-        <p style={{ fontSize: "13px", color: "var(--text2)", lineHeight: 1.6 }}>
-          Miss a run or add a group run and your plan adapts automatically. Tap Coach to discuss any changes.
-        </p>
-      </div>
+      {/* Workout detail modal */}
+      <BottomSheet
+        isOpen={!!selectedWorkout}
+        onClose={() => setSelectedWorkout(null)}
+        title={selectedWorkout?.name || ""}
+      >
+        {selectedWorkout && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+            {/* Type badge */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{
+                fontSize: "11px", fontWeight: 600,
+                padding: "4px 12px", borderRadius: "20px",
+                color: typeColors[selectedWorkout.type]?.color,
+                background: typeColors[selectedWorkout.type]?.bg,
+                fontFamily: "'DM Mono', monospace",
+              }}>
+                {selectedWorkout.type}
+              </span>
+              <span style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace" }}>
+                {selectedWorkout.distance} · {selectedWorkout.duration}
+              </span>
+            </div>
+
+            {/* Purpose */}
+            <div>
+              <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
+                Why this workout
+              </p>
+              <p style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.6 }}>
+                {selectedWorkout.purpose}
+              </p>
+            </div>
+
+            {/* Execution */}
+            <div>
+              <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
+                How to execute
+              </p>
+              <p style={{ fontSize: "14px", color: "var(--text2)", lineHeight: 1.6 }}>
+                {selectedWorkout.execution}
+              </p>
+            </div>
+
+            {/* Targets */}
+            {selectedWorkout.targetHR && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <div style={{ background: "var(--bg3)", borderRadius: "10px", padding: "12px" }}>
+                  <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginBottom: "4px" }}>TARGET HR</p>
+                  <p style={{ fontSize: "13px", color: "var(--text)", fontWeight: 600 }}>{selectedWorkout.targetHR}</p>
+                </div>
+                <div style={{ background: "var(--bg3)", borderRadius: "10px", padding: "12px" }}>
+                  <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginBottom: "4px" }}>TARGET PACE</p>
+                  <p style={{ fontSize: "13px", color: "var(--text)", fontWeight: 600 }}>{selectedWorkout.targetPace}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Start button */}
+            <button style={{
+              width: "100%", background: "var(--green)",
+              color: "var(--green-text)", fontWeight: 600,
+              padding: "14px", borderRadius: "12px",
+              border: "none", cursor: "pointer",
+              fontSize: "15px", fontFamily: "'Syne', sans-serif",
+              marginTop: "4px",
+            }}>
+              Start Workout
+            </button>
+
+          </div>
+        )}
+      </BottomSheet>
+
+      {/* Add Group Run modal */}
+      <BottomSheet
+        isOpen={showGroupRun}
+        onClose={() => setShowGroupRun(false)}
+        title="Add Group Run"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+
+          {groupRunSaved ? (
+            <div style={{ textAlign: "center", padding: "20px 0" }}>
+              <p style={{ fontSize: "32px", marginBottom: "8px" }}>✓</p>
+              <p style={{ fontSize: "16px", fontWeight: 600, color: "var(--green)" }}>Group run added!</p>
+              <p style={{ fontSize: "13px", color: "var(--text2)", marginTop: "4px" }}>Your plan will adapt accordingly.</p>
+            </div>
+          ) : (
+            <>
+              {[
+                { label: "Date", key: "date", type: "date", placeholder: "" },
+                { label: "Distance (km)", key: "distance", type: "text", placeholder: "e.g. 15" },
+                { label: "Estimated time", key: "time", type: "text", placeholder: "e.g. 1h 30min" },
+                { label: "Notes", key: "notes", type: "text", placeholder: "e.g. Saturday parkrun group" },
+              ].map((field) => (
+                <div key={field.key}>
+                  <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
+                    {field.label}
+                  </p>
+                  <input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={groupRunForm[field.key as keyof typeof groupRunForm]}
+                    onChange={(e) => setGroupRunForm({ ...groupRunForm, [field.key]: e.target.value })}
+                    style={{
+                      width: "100%", background: "var(--bg3)",
+                      border: "0.5px solid var(--border)", borderRadius: "10px",
+                      padding: "12px 14px", color: "var(--text)",
+                      fontSize: "14px", outline: "none",
+                      fontFamily: "'Syne', sans-serif",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              ))}
+
+              <div style={{ background: "rgba(31,204,138,0.08)", border: "0.5px solid rgba(31,204,138,0.2)", borderRadius: "10px", padding: "12px" }}>
+                <p style={{ fontSize: "12px", color: "var(--green)", lineHeight: 1.6 }}>
+                  The AI coach will automatically adjust your plan around this group run to avoid overtraining.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveGroupRun}
+                style={{
+                  width: "100%", background: "var(--green)",
+                  color: "var(--green-text)", fontWeight: 600,
+                  padding: "14px", borderRadius: "12px",
+                  border: "none", cursor: "pointer",
+                  fontSize: "15px", fontFamily: "'Syne', sans-serif",
+                }}
+              >
+                Save Group Run
+              </button>
+            </>
+          )}
+        </div>
+      </BottomSheet>
 
     </div>
   );

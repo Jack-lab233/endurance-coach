@@ -1,12 +1,10 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   IconBolt,
   IconRun,
   IconTrophy,
   IconRobot,
-  IconSettings,
+  IconUser,
 } from "@tabler/icons-react";
 
 const navItems = [
@@ -14,7 +12,7 @@ const navItems = [
   { href: "/training", label: "Train", icon: IconRun },
   { href: "/races", label: "Races", icon: IconTrophy },
   { href: "/coach", label: "Coach", icon: IconRobot },
-  { href: "/settings", label: "Settings", icon: IconSettings },
+  { href: "/profile", label: "Profile", icon: IconUser },
 ];
 
 export default function BottomNav() {

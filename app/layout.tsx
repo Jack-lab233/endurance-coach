@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import BottomNav from "./components/BottomNav";
-import FloatingAction from "./components/FloatingAction";
-import Link from "next/link";
-import { IconSettings } from "@tabler/icons-react";
+import LayoutWrapper from "./components/LayoutWrapper";
 
 export const metadata: Metadata = {
   title: "EnduranceCoach",
@@ -25,29 +22,9 @@ export default function RootLayout({
           background: "var(--bg)",
           position: "relative",
         }}>
-          {/* Settings button — scrolls with page, not fixed */}
-          <Link href="/settings" style={{
-            position: "absolute",
-            top: "16px",
-            right: "16px",
-            zIndex: 40,
-            width: "36px", height: "36px",
-            background: "rgba(20,20,20,0.8)",
-            backdropFilter: "blur(10px)",
-            border: "0.5px solid var(--border)",
-            borderRadius: "50%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "var(--text2)",
-            textDecoration: "none",
-          }}>
-            <IconSettings size={18} strokeWidth={1.6} />
-          </Link>
-
-          <main style={{ paddingBottom: "72px" }}>
+          <LayoutWrapper>
             {children}
-          </main>
-          <FloatingAction />
-          <BottomNav />
+          </LayoutWrapper>
         </div>
       </body>
     </html>

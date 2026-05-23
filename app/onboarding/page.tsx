@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "../lib/supabase";
 
 const steps = [
   {
@@ -97,25 +98,65 @@ export default function OnboardingPage() {
   const [selectedDays, setSelectedDays] = useState<number>(5);
   const [selectedPhilosophy, setSelectedPhilosophy] = useState("balanced");
   const [selectedPersonality, setSelectedPersonality] = useState("supportive");
+  const [saving, setSaving] = useState(false);
 
   const step = steps[stepIndex];
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
   const progress = ((stepIndex) / (steps.length - 1)) * 100;
 
-  const handleNext = () => {
-  if (isLast) {
-    localStorage.setItem("onboardingDone", "true");
-    localStorage.setItem("userName", formData.name || "Athlete");
-    localStorage.setItem("coachPersonality", selectedPersonality);
-    localStorage.setItem("trainingPhilosophy", selectedPhilosophy);
-    localStorage.setItem("trainingDays", String(selectedDays));
-    localStorage.setItem("userProfile", JSON.stringify({ ...formData, days: selectedDays }));
-    router.push("/");
-  } else {
-    setStepIndex(stepIndex + 1);
-  }
-};
+  const handleNext = async () => {
+    if (isLast) {
+      setSaving(true);
+
+      // Always save to localStorage as backup
+      localStorage.setItem("onboardingDone", "true");
+      localStorage.setItem("userName", formData.name || "Athlete");
+      localStorage.setItem("coachPersonality", selectedPersonality);
+      localStorage.setItem("trainingPhilosophy", selectedPhilosophy);
+      localStorage.setItem("trainingDays", String(selectedDays));
+      localStorage.setItem("userProfile", JSON.stringify({ ...formData, days: selectedDays }));
+
+      // Save to Supabase if logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          full_name: formData.name || "Athlete",
+          age: formData.age ? parseInt(formData.age) : null,
+          gender: formData.gender || null,
+          weight_kg: formData.weight ? parseFloat(formData.weight) : null,
+          max_hr: formData.maxHR ? parseInt(formData.maxHR) : null,
+          resting_hr: formData.restingHR ? parseInt(formData.restingHR) : null,
+          marathon_pb: formData.marathonPB || null,
+          half_marathon_pb: formData.halfPB || null,
+          weekly_km: formData.weeklyKm ? parseFloat(formData.weeklyKm) : null,
+          training_days: selectedDays,
+          training_philosophy: selectedPhilosophy,
+          coach_personality: selectedPersonality,
+          updated_at: new Date().toISOString(),
+        });
+
+        // Save goal race to races table if entered
+        if (formData.raceName && formData.raceDate) {
+          await supabase.from("races").insert({
+            user_id: user.id,
+            name: formData.raceName,
+            date: formData.raceDate,
+            distance: formData.raceDistance || "Marathon",
+            goal_time: formData.goalTime || null,
+            surface: "Road",
+            location: "",
+          });
+        }
+      }
+
+      setSaving(false);
+      router.push("/");
+    } else {
+      setStepIndex(stepIndex + 1);
+    }
+  };
 
   const handleBack = () => {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
@@ -338,16 +379,17 @@ export default function OnboardingPage() {
       }}>
         <button
           onClick={handleNext}
+          disabled={saving}
           style={{
-            width: "100%", background: "var(--green)",
+            width: "100%", background: saving ? "rgba(31,204,138,0.4)" : "var(--green)",
             color: "var(--green-text)", fontWeight: 700,
             padding: "16px", borderRadius: "14px",
-            border: "none", cursor: "pointer",
+            border: "none", cursor: saving ? "not-allowed" : "pointer",
             fontSize: "16px", fontFamily: "'Syne', sans-serif",
             letterSpacing: "-0.01em",
           }}
         >
-          {isFirst ? "Get Started" : isLast ? "Build My Plan →" : "Continue →"}
+          {saving ? "Saving..." : isFirst ? "Get Started" : isLast ? "Build My Plan →" : "Continue →"}
         </button>
       </div>
 

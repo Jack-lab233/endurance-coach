@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { IconSettings } from "@tabler/icons-react";
 
 const philosophies = [
   { id: "polarized", label: "Polarized", desc: "80% easy, 20% hard. Science-backed for endurance.", color: "#4a9eff" },
@@ -21,28 +23,56 @@ export default function ProfilePage() {
   const [selectedPhilosophy, setSelectedPhilosophy] = useState("balanced");
   const [selectedPersonality, setSelectedPersonality] = useState("supportive");
   const [saved, setSaved] = useState(false);
+  const [profile, setProfile] = useState<Record<string, string>>({});
 
- const handleSave = () => {
-  localStorage.setItem("coachPersonality", selectedPersonality);
-  localStorage.setItem("trainingPhilosophy", selectedPhilosophy);
-  localStorage.setItem("userName", "Connor");
+  useEffect(() => {
+    const storedProfile = localStorage.getItem("userProfile");
+    if (storedProfile) setProfile(JSON.parse(storedProfile));
+    const philosophy = localStorage.getItem("trainingPhilosophy");
+    if (philosophy) setSelectedPhilosophy(philosophy);
+    const personality = localStorage.getItem("coachPersonality");
+    if (personality) setSelectedPersonality(personality);
+  }, []);
 
-  setSaved(true);
+  const handleSave = () => {
+    localStorage.setItem("coachPersonality", selectedPersonality);
+    localStorage.setItem("trainingPhilosophy", selectedPhilosophy);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
-  setTimeout(() => setSaved(false), 2000);
-};
+  const userName = profile.name || localStorage.getItem?.("userName") || "Athlete";
+  const initial = userName.charAt(0).toUpperCase();
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
 
-      {/* Header */}
-      <div style={{ padding: "52px 16px 16px" }}>
-        <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          Athlete
-        </p>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginTop: "4px" }}>
-          Profile
-        </h1>
+      {/* Header with settings button */}
+      <div style={{
+        padding: "52px 16px 16px",
+        display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+      }}>
+        <div>
+          <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Athlete
+          </p>
+          <h1 style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginTop: "4px" }}>
+            Profile
+          </h1>
+        </div>
+        <Link href="/settings" style={{
+          width: "36px", height: "36px",
+          background: "rgba(20,20,20,0.8)",
+          backdropFilter: "blur(10px)",
+          border: "0.5px solid var(--border)",
+          borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "var(--text2)",
+          textDecoration: "none",
+          flexShrink: 0,
+        }}>
+          <IconSettings size={18} strokeWidth={1.6} />
+        </Link>
       </div>
 
       {/* Athlete card */}
@@ -54,19 +84,21 @@ export default function ProfilePage() {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "24px", fontWeight: 700, color: "var(--green)",
           }}>
-            C
+            {initial}
           </div>
           <div>
-            <p style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em" }}>Connor Hubert</p>
-            <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginTop: "2px" }}>connor@email.com</p>
+            <p style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em" }}>{userName}</p>
+            <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginTop: "2px" }}>
+              {profile.gender || ""}{profile.age ? ` · ${profile.age} yrs` : ""}
+            </p>
           </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
           {[
-            { label: "Age", value: "28" },
-            { label: "Weight", value: "72kg" },
-            { label: "Max HR", value: "187" },
+            { label: "Age", value: profile.age || "—" },
+            { label: "Weight", value: profile.weight ? `${profile.weight}kg` : "—" },
+            { label: "Max HR", value: profile.maxHR ? `${profile.maxHR}` : "—" },
           ].map((stat, i) => (
             <div key={i} style={{ background: "var(--bg3)", borderRadius: "10px", padding: "10px 12px" }}>
               <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>{stat.label}</p>
@@ -81,13 +113,12 @@ export default function ProfilePage() {
         <p style={{ fontSize: "10px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px" }}>
           Performance
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           {[
-            { label: "Marathon PB", value: "3:52:14" },
-            { label: "Half Marathon PB", value: "1:44:30" },
-            { label: "10km PB", value: "46:22" },
-            { label: "Weekly mileage (avg)", value: "48km" },
-            { label: "Total runs this year", value: "87" },
+            { label: "Marathon PB", value: profile.marathonPB || "—" },
+            { label: "Half Marathon PB", value: profile.halfPB || "—" },
+            { label: "Current weekly km", value: profile.weeklyKm ? `${profile.weeklyKm}km` : "—" },
+            { label: "Training days/week", value: profile.days ? `${profile.days} days` : "—" },
           ].map((item, i, arr) => (
             <div key={i} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -117,13 +148,9 @@ export default function ProfilePage() {
               style={{
                 background: selectedPhilosophy === p.id ? `${p.color}12` : "var(--bg2)",
                 border: `0.5px solid ${selectedPhilosophy === p.id ? p.color : "var(--border)"}`,
-                borderRadius: "var(--radius)",
-                padding: "12px 16px",
-                cursor: "pointer",
-                textAlign: "left",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                borderRadius: "var(--radius)", padding: "12px 16px",
+                cursor: "pointer", textAlign: "left",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
               }}
             >
               <div>
@@ -138,8 +165,7 @@ export default function ProfilePage() {
                 width: "18px", height: "18px", borderRadius: "50%",
                 border: `2px solid ${selectedPhilosophy === p.id ? p.color : "var(--border)"}`,
                 background: selectedPhilosophy === p.id ? p.color : "transparent",
-                flexShrink: 0,
-                marginLeft: "12px",
+                flexShrink: 0, marginLeft: "12px",
               }} />
             </button>
           ))}
@@ -162,10 +188,8 @@ export default function ProfilePage() {
               style={{
                 background: selectedPersonality === p.id ? "rgba(31,204,138,0.08)" : "var(--bg2)",
                 border: `0.5px solid ${selectedPersonality === p.id ? "var(--green)" : "var(--border)"}`,
-                borderRadius: "var(--radius)",
-                padding: "12px 14px",
-                cursor: "pointer",
-                textAlign: "left",
+                borderRadius: "var(--radius)", padding: "12px 14px",
+                cursor: "pointer", textAlign: "left",
               }}
             >
               <p style={{ fontSize: "20px", marginBottom: "6px" }}>{p.emoji}</p>
@@ -210,8 +234,8 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* Save button */}
-      <div style={{ padding: "0 16px 32px" }}>
+      {/* Sign out button */}
+      <div style={{ padding: "0 16px 8px" }}>
         <button
           onClick={handleSave}
           style={{
@@ -220,11 +244,27 @@ export default function ProfilePage() {
             fontWeight: 600, padding: "14px", borderRadius: "12px",
             border: saved ? "0.5px solid var(--green)" : "none",
             cursor: "pointer", fontSize: "15px",
-            fontFamily: "'Syne', sans-serif",
-            transition: "all 0.2s ease",
+            fontFamily: "'Syne', sans-serif", transition: "all 0.2s ease",
           }}
         >
           {saved ? "✓ Saved" : "Save Profile"}
+        </button>
+      </div>
+
+      <div style={{ padding: "0 16px 32px" }}>
+        <button
+          onClick={() => {
+            localStorage.clear();
+            window.location.href = "/auth";
+          }}
+          style={{
+            width: "100%", background: "transparent",
+            color: "#e05252", fontWeight: 600, padding: "14px",
+            borderRadius: "12px", border: "0.5px solid rgba(224,82,82,0.3)",
+            cursor: "pointer", fontSize: "15px", fontFamily: "'Syne', sans-serif",
+          }}
+        >
+          Sign Out
         </button>
       </div>
 

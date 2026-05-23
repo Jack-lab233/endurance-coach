@@ -30,19 +30,21 @@ export default function AuthPage() {
     }
 
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      console.log("Signup result:", { data, error });
       if (error) {
         setError(error.message);
       } else {
         setMessage("Check your email for a confirmation link!");
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError("Incorrect email or password.");
-      } else {
-        router.push("/");
-      }
+   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+console.log("Login result:", { data, error });
+if (error) {
+  setError(error.message);
+} else {
+  window.location.href = "/";
+}
     }
     setLoading(false);
   }

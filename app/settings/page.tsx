@@ -5,12 +5,18 @@ export default function SettingsPage() {
   const [units, setUnits] = useState("Metric");
   const [appearance, setAppearance] = useState("Dark");
   const [fontSize, setFontSize] = useState("Default");
+  const [trainingPhilosophy, setTrainingPhilosophy] = useState("Balanced");
+  const [trainingDays, setTrainingDays] = useState("5");
+  const [coachPersonality, setCoachPersonality] = useState("Supportive");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setUnits(localStorage.getItem("units") || "Metric");
     setAppearance(localStorage.getItem("appearance") || "Dark");
     setFontSize(localStorage.getItem("fontSize") || "Default");
+    setTrainingPhilosophy(localStorage.getItem("trainingPhilosophy") || "Balanced");
+    setTrainingDays(localStorage.getItem("trainingDays") || "5");
+    setCoachPersonality(localStorage.getItem("coachPersonality") || "Supportive");
   }, []);
 
   const handleSave = () => {
@@ -33,15 +39,15 @@ export default function SettingsPage() {
     {
       title: "Training",
       items: [
-        { label: "Coaching philosophy", value: localStorage?.getItem?.("trainingPhilosophy") || "Balanced", link: "/profile" },
-        { label: "Weekly availability", value: `${localStorage?.getItem?.("trainingDays") || 5} days`, link: "/profile" },
+        { label: "Coaching philosophy", value: trainingPhilosophy, link: "/profile" },
+        { label: "Weekly availability", value: `${trainingDays} days`, link: "/profile" },
         { label: "Race goals", value: "Sub 3:45", link: "/races" },
       ],
     },
     {
       title: "Coach",
       items: [
-        { label: "Coach personality", value: localStorage?.getItem?.("coachPersonality") || "Supportive", link: "/profile" },
+        { label: "Coach personality", value: coachPersonality, link: "/profile" },
         { label: "AI permissions", value: "Full access", link: "/profile" },
       ],
     },

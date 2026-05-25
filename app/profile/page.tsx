@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { IconSettings } from "@tabler/icons-react";
 import { supabase } from "../lib/supabase";
@@ -51,11 +51,12 @@ export default function ProfilePage() {
     terrain_access: ["Road"],
   });
 
-const [loading, setLoading] = useState(true);
-const [saving, setSaving] = useState(false);
-const [saved, setSaved] = useState(false);
-const [userId, setUserId] = useState<string | null>(null);
-const [stravaConnected, setStravaConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -63,7 +64,7 @@ const [stravaConnected, setStravaConnected] = useState(false);
       if (!user) return;
       setUserId(user.id);
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
@@ -80,14 +81,13 @@ const [stravaConnected, setStravaConnected] = useState(false);
           weekly_availability: data.weekly_availability?.toString() || "5",
           injury_history: data.injury_history || "",
           coaching_philosophy: data.coaching_philosophy || "balanced",
-          coach_personality: localStorage.getItem("coachPersonality") || "supportive",
+          coach_personality: data.coach_personality || localStorage.getItem("coachPersonality") || "supportive",
           terrain_access: data.terrain_access || ["Road"],
         });
-        // Keep localStorage in sync for other pages that read it
         localStorage.setItem("userName", data.full_name || "");
         localStorage.setItem("trainingPhilosophy", data.coaching_philosophy || "balanced");
+        localStorage.setItem("coachPersonality", data.coach_personality || "supportive");
       } else {
-        // Fall back to localStorage for onboarding data
         const stored = localStorage.getItem("userProfile");
         if (stored) {
           const p = JSON.parse(stored);
@@ -107,7 +107,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
         if (personality) setForm(f => ({ ...f, coach_personality: personality }));
       }
 
-      // Check if Strava is connected
       const { data: stravaToken } = await supabase
         .from("strava_tokens")
         .select("id")
@@ -115,7 +114,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
         .maybeSingle();
       setStravaConnected(!!stravaToken);
 
-      // Check URL params for Strava callback result
       const params = new URLSearchParams(window.location.search);
       if (params.get("strava") === "connected") {
         setStravaConnected(true);
@@ -128,37 +126,50 @@ const [stravaConnected, setStravaConnected] = useState(false);
     loadProfile();
   }, []);
 
-  const handleSave = async () => {
+  // Auto-save: debounce 800ms after any form change (skip the initial load)
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      if (!loading) isFirstLoad.current = false;
+      return;
+    }
     if (!userId) return;
-    setSaving(true);
 
-    // Save to Supabase
-    const { error } = await supabase.from("profiles").upsert({
-      id: userId,
-      full_name: form.full_name || null,
-      age: form.age ? parseInt(form.age) : null,
-      gender: form.gender || null,
-      weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
-      max_hr: form.max_hr ? parseInt(form.max_hr) : null,
-      resting_hr: form.resting_hr ? parseInt(form.resting_hr) : null,
-      weekly_availability: form.weekly_availability ? parseInt(form.weekly_availability) : 5,
-      injury_history: form.injury_history || null,
-      coaching_philosophy: form.coaching_philosophy,
-      terrain_access: form.terrain_access,
-      updated_at: new Date().toISOString(),
-    });
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSaveStatus("saving");
 
-    if (error) console.error("Profile save error:", error.message);
+    debounceRef.current = setTimeout(async () => {
+      const { error } = await supabase.from("profiles").upsert({
+        id: userId,
+        full_name: form.full_name || null,
+        age: form.age ? parseInt(form.age) : null,
+        gender: form.gender || null,
+        weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
+        max_hr: form.max_hr ? parseInt(form.max_hr) : null,
+        resting_hr: form.resting_hr ? parseInt(form.resting_hr) : null,
+        weekly_availability: form.weekly_availability ? parseInt(form.weekly_availability) : 5,
+        injury_history: form.injury_history || null,
+        coaching_philosophy: form.coaching_philosophy,
+        coach_personality: form.coach_personality,
+        terrain_access: form.terrain_access,
+        updated_at: new Date().toISOString(),
+      });
 
-    // Keep localStorage in sync
-    localStorage.setItem("userName", form.full_name);
-    localStorage.setItem("trainingPhilosophy", form.coaching_philosophy);
-    localStorage.setItem("coachPersonality", form.coach_personality);
+      if (!error) {
+        localStorage.setItem("userName", form.full_name);
+        localStorage.setItem("trainingPhilosophy", form.coaching_philosophy);
+        localStorage.setItem("coachPersonality", form.coach_personality);
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      } else {
+        console.error("Auto-save error:", error.message);
+        setSaveStatus("idle");
+      }
+    }, 800);
 
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [form, userId, loading]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -175,7 +186,7 @@ const [stravaConnected, setStravaConnected] = useState(false);
     }));
   };
 
-  const initial = form.full_name ? form.full_name.charAt(0).toUpperCase() : "A";
+  const initial = form.full_name ? form.full_name.charAt(0).toUpperCase() : "?";
 
   if (loading) {
     return (
@@ -198,14 +209,26 @@ const [stravaConnected, setStravaConnected] = useState(false);
             Profile
           </h1>
         </div>
-        <Link href="/settings" style={{
-          width: "36px", height: "36px", background: "rgba(20,20,20,0.8)",
-          backdropFilter: "blur(10px)", border: "0.5px solid var(--border)",
-          borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--text2)", textDecoration: "none", flexShrink: 0,
-        }}>
-          <IconSettings size={18} strokeWidth={1.6} />
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* Auto-save indicator */}
+          {saveStatus !== "idle" && (
+            <span style={{
+              fontSize: "11px", fontFamily: "'DM Mono', monospace",
+              color: saveStatus === "saved" ? "var(--green)" : "var(--text3)",
+              transition: "color 0.3s ease",
+            }}>
+              {saveStatus === "saving" ? "saving..." : "✓ saved"}
+            </span>
+          )}
+          <Link href="/settings" style={{
+            width: "36px", height: "36px", background: "rgba(20,20,20,0.8)",
+            backdropFilter: "blur(10px)", border: "0.5px solid var(--border)",
+            borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--text2)", textDecoration: "none", flexShrink: 0,
+          }}>
+            <IconSettings size={18} strokeWidth={1.6} />
+          </Link>
+        </div>
       </div>
 
       {/* Avatar + name preview */}
@@ -219,12 +242,12 @@ const [stravaConnected, setStravaConnected] = useState(false);
           {initial}
         </div>
         <div>
-          <p style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em" }}>
-            {form.full_name || "Your Name"}
+          <p style={{ fontSize: "18px", fontWeight: 700, color: form.full_name ? "var(--text)" : "var(--text3)", letterSpacing: "-0.02em" }}>
+            {form.full_name || "Add your name below"}
           </p>
           <p style={{ fontSize: "12px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", marginTop: "2px" }}>
-            {form.gender || ""}{form.age ? ` · ${form.age} yrs` : ""}
-            {form.weight_kg ? ` · ${form.weight_kg}kg` : ""}
+            {form.gender || ""}{form.age ? ` · ${form.age} yrs` : ""}{form.weight_kg ? ` · ${form.weight_kg}kg` : ""}
+            {!form.gender && !form.age && !form.weight_kg ? "Fill in your details below" : ""}
           </p>
         </div>
       </div>
@@ -236,7 +259,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
-          {/* Name */}
           <div>
             <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Name</p>
             <input
@@ -246,7 +268,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             />
           </div>
 
-          {/* Gender */}
           <div>
             <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Gender</p>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -263,7 +284,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             </div>
           </div>
 
-          {/* Age + Weight in a row */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             <div>
               <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Age</p>
@@ -281,7 +301,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             </div>
           </div>
 
-          {/* Max HR + Resting HR in a row */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             <div>
               <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Max HR</p>
@@ -299,7 +318,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             </div>
           </div>
 
-          {/* Weekly availability */}
           <div>
             <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
               Training Days / Week — <span style={{ color: "var(--green)" }}>{form.weekly_availability} days</span>
@@ -314,7 +332,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             </div>
           </div>
 
-          {/* Terrain */}
           <div>
             <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Terrain Access</p>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -331,7 +348,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             </div>
           </div>
 
-          {/* Injury history */}
           <div>
             <p style={{ fontSize: "11px", color: "var(--text3)", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Injury History (optional)</p>
             <textarea
@@ -413,7 +429,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
           </p>
         </div>
 
-        {/* Strava */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 16px", borderBottom: "0.5px solid var(--border)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#FC4C02", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -440,7 +455,7 @@ const [stravaConnected, setStravaConnected] = useState(false);
             <button
               onClick={() => {
                 const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
-                const redirect = encodeURIComponent("http://localhost:3000/api/strava/callback");
+                const redirect = encodeURIComponent(`${window.location.origin}/api/strava/callback`);
                 const scope = "activity:read_all";
                 window.location.href = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirect}&response_type=code&scope=${scope}`;
               }}
@@ -451,7 +466,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
           )}
         </div>
 
-        {/* Garmin — coming soon */}
         {[
           { name: "Garmin Connect", color: "#4a9eff" },
           { name: "Apple Health", color: "#e05252" },
@@ -463,22 +477,6 @@ const [stravaConnected, setStravaConnected] = useState(false);
             </button>
           </div>
         ))}
-      </div>
-
-      {/* Save */}
-      <div style={{ padding: "0 16px 8px" }}>
-        <button onClick={handleSave} disabled={saving}
-          style={{
-            width: "100%", background: saved ? "var(--bg2)" : "var(--green)",
-            color: saved ? "var(--green)" : "var(--green-text)",
-            fontWeight: 600, padding: "14px", borderRadius: "12px",
-            border: saved ? "0.5px solid var(--green)" : "none",
-            cursor: "pointer", fontSize: "15px", fontFamily: "'Syne', sans-serif",
-            opacity: saving ? 0.6 : 1,
-          }}
-        >
-          {saving ? "Saving..." : saved ? "✓ Saved" : "Save Profile"}
-        </button>
       </div>
 
       {/* Sign out */}

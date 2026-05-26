@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatCard from "./components/StatCard";
 import { getRaces, loadRacesFromSupabase, Race } from "./lib/raceStore";
+import { supabase } from "./lib/supabase";
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -51,21 +52,13 @@ interface ManualRun {
   created_at: string;
 }
 
-interface WeekStats {
-  totalKm: number;
-  totalMinutes: number;
-  runCount: number;
-  avgPaceSeconds: number | null;
-}
-
-function getThisWeekStats(runs: ManualRun[]): WeekStats {
+function getThisWeekStats(runs: ManualRun[]) {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setHours(0, 0, 0, 0);
-  startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Monday
+  startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
 
   const thisWeek = runs.filter(r => new Date(r.date) >= startOfWeek);
-
   const totalKm = thisWeek.reduce((sum, r) => sum + r.distance_km, 0);
   const totalMinutes = thisWeek.reduce((sum, r) => sum + r.duration_minutes, 0);
   const runsWithPace = thisWeek.filter(r => r.avg_pace_seconds);
@@ -83,28 +76,38 @@ export default function Home() {
   const [manualRuns, setManualRuns] = useState<ManualRun[]>([]);
   const [strava, setStrava] = useState<any>(null);
   const [stravaLoading, setStravaLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    setMounted(true);
-    const savedName = localStorage.getItem("userName") || "";
-    setName(savedName);
+    // Check auth first — redirect to login if not logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.push("/auth");
+        return;
+      }
+      setAuthChecked(true);
 
-    // Load manual runs
-    const stored = JSON.parse(localStorage.getItem("manual_runs") || "[]");
-    setManualRuns(stored);
+      setMounted(true);
+      const savedName = localStorage.getItem("userName") || "";
+      setName(savedName);
 
-    // Load races
-    setRaces(getRaces());
-    loadRacesFromSupabase().then(setRaces);
+      const stored = JSON.parse(localStorage.getItem("manual_runs") || "[]");
+      setManualRuns(stored);
 
-    // Try Strava
-    fetch("/api/strava/activities")
-      .then(res => res.json())
-      .then(data => { if (!data.error) setStrava(data); })
-      .catch(() => {})
-      .finally(() => setStravaLoading(false));
-  }, []);
+      setRaces(getRaces());
+      loadRacesFromSupabase().then(setRaces);
+
+      fetch("/api/strava/activities")
+        .then(res => res.json())
+        .then(data => { if (!data.error) setStrava(data); })
+        .catch(() => {})
+        .finally(() => setStravaLoading(false));
+    });
+  }, [router]);
+
+  // Show nothing while checking auth (prevents flash)
+  if (!authChecked) return null;
 
   const upcomingRaces = races
     .filter(r => getDaysUntil(r.date) > 0)
@@ -113,7 +116,6 @@ export default function Home() {
 
   const primaryRace = races.find(r => r.isPrimary) || upcomingRaces[0] || null;
 
-  // Stats: prefer Strava, fall back to manual runs
   const weekStats = getThisWeekStats(manualRuns);
   const hasActivity = strava || weekStats.runCount > 0;
 
@@ -123,7 +125,6 @@ export default function Home() {
   const displayPace = strava ? strava.avgPace : weekStats.avgPaceSeconds ? formatPace(weekStats.avgPaceSeconds) : "—";
   const displayCount = strava ? strava.thisWeekCount : weekStats.runCount;
 
-  // Last run
   const lastManualRun = manualRuns[0] || null;
   const lastRun = strava?.lastRun || null;
 
